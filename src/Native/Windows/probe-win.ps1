@@ -6,19 +6,21 @@ function GetCMakeVersions
   $items = @()
   $items += @(Get-ChildItem hklm:\SOFTWARE\Wow6432Node\Kitware -ErrorAction SilentlyContinue)
   $items += @(Get-ChildItem hklm:\SOFTWARE\Kitware -ErrorAction SilentlyContinue)
-  return $items | where { $_.PSChildName.StartsWith("CMake ") }
+  return $items | where { $_.PSChildName.StartsWith("CMake") }
 }
 
 function GetCMakeInfo($regKey)
 {
-  # This no longer works for versions 3.5+
-  try {
+  if ($regKey -match " ") {
+    # Only works prior to version 3.5
     $version = [System.Version] $regKey.PSChildName.Split(' ')[1]
+    $cmakeDir = (Get-ItemProperty $regKey.PSPath).'(default)'
   }
-  catch {
-    return $null
+  else {
+    # hack for version 3.5+
+    $version = "3.5+"
+    $cmakeDir = (Get-ItemProperty $regKey.PSPath -name 'InstallDir').'InstallDir'
   }
-  $cmakeDir = (Get-ItemProperty $regKey.PSPath).'(default)'
   $cmakePath = [System.IO.Path]::Combine($cmakeDir, "bin\cmake.exe")
   if (![System.IO.File]::Exists($cmakePath)) {
     return $null
